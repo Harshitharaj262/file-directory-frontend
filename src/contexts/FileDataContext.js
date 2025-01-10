@@ -1,23 +1,34 @@
-import { useEffect, createContext, useContext, useState } from "react";
+import { useEffect, createContext, useContext, useState , useReducer} from "react";
 
 const FileDataContext = createContext(); // Correct Context
 
+const emptyData={
+  files: []
+}
+
+function fileDataReducer(state, action) {
+  if (!Object.keys(emptyData).includes(action.type)) {
+    throw new Error(`Unhandled action type: ${action.type}`);
+  }
+  return { ...state, ...{ [action.type]: action.value } };
+}
 function FileDataProvider({ children }) {
   const [files, setFiles] = useState([]);
+const [state, dispatch] = useReducer(fileDataReducer, emptyData)
 
   useEffect(() => {
     fetch("http://localhost:3001/api")
       .then((res) => res.json())
       .then((result) => {
-        setFiles(result.data);
+        dispatch({type:"files", value: result.data})
       })
       .catch((err) => {
         console.log(err.message);
       });
-  }, []);
+  }, [state.reload]);
 
   const value = {
-   files,
+   state, dispatch
   };
 
   return (
@@ -27,9 +38,13 @@ function FileDataProvider({ children }) {
   );
 }
 
-export const useFileData = () => {
-  // Correct usage of useContext with FileDataContext
-  return useContext(FileDataContext);
+const useFileData = () => {
+  const context = useContext(FileDataContext)
+  if (!context) {
+    throw new Error("useFileData must be used within a FileDataProvider");
+  }
+  return context;
 };
 
-export default FileDataProvider;
+
+export {FileDataProvider, useFileData};

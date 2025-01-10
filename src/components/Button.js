@@ -1,21 +1,46 @@
 
-import {FolderPlusIcon, PencilSquareIcon, TrashIcon} from '@heroicons/react/24/outline'
-function Button({files}){
+import {FolderPlusIcon} from '@heroicons/react/24/outline'
+import { useState } from 'react';
+import DialogBox from './Dialog';
+function Button({files, setFiles}){
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [action, setAction] = useState(null);
+
+  const openCreateDialogBox = () =>{
+     setAction("Create")
+    setIsDialogOpen(true)
+  }
+
+  const handleCreateFileAndFolder = async(id,parentId, name, type) =>{
+    console.log("openCreateDialogBox")
+    const response = await fetch("http://localhost:3001/api/create",{
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name,
+        type
+      })
+    })
+    const result = await response.json()
+    setFiles( [...files, result.data])
+  }
     return(
         <>
-         <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded my-2 mx-2 flex items-center space-x-2">
+         <button onClick={openCreateDialogBox} className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded my-2 mx-2 flex items-center space-x-2">
          <FolderPlusIcon className='transform duration-300 ease h-6 w-6 text-white' />
             <span>Create</span>
           </button>
-          <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded my-2 mx-2 flex items-center space-x-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-blue-500" disabled={files?.length===0}>
-            <PencilSquareIcon className='transform duration-300 ease h-6 w-6 text-white' />
 
-            <span>Rename</span>
-          </button>
-          <button className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded my-2 mx-2 flex items-center space-x-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-500" disabled={files?.length===0}>
-            <TrashIcon className='transform duration-300 ease h-6 w-6 text-white' />
-            <span>Delete</span>
-          </button>
+          {isDialogOpen &&(
+            <DialogBox 
+            
+            isDialogOpen={isDialogOpen}
+            setIsDialogOpen={setIsDialogOpen}
+            action={action}
+            onSubmit={handleCreateFileAndFolder}/>
+          )}
         </>
     )
 }
