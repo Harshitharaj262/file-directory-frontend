@@ -11,7 +11,8 @@ function Button({files, setFiles}){
     setIsDialogOpen(true)
   }
 
-  const handleCreateFileAndFolder = async(id,parentId, name, type) =>{
+  const handleCreateFileAndFolder = async(params) =>{
+    const {id, parentId, name, type} =params
     console.log("openCreateDialogBox")
     const response = await fetch("http://localhost:3001/api/create",{
       method: "POST",
@@ -20,7 +21,10 @@ function Button({files, setFiles}){
       },
       body: JSON.stringify({
         name,
-        type
+        type,
+      parentId
+        
+
       })
     })
     const result = await response.json()

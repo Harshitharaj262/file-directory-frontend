@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 
 function DialogBox({ isDialogOpen, setIsDialogOpen, file, action, onSubmit }) {
-  const [newName, setNewName] = useState(file?.name || "");
+  const [newName, setNewName] = useState(action!=='Create'? file?.name: '');
 
  const handleSubmit = (e) => {
   e.preventDefault();
@@ -12,7 +12,9 @@ function DialogBox({ isDialogOpen, setIsDialogOpen, file, action, onSubmit }) {
 
   const isFile = /\.[a-zA-Z0-9]+$/.test(trimmedName);
   const type = isFile ? 'file' : 'folder';
-  onSubmit(action === "Create" ? null : file._id, file.parentId, trimmedName, type);
+  onSubmit( action === "Create" 
+    ? { id: null, parentId: file?._id || null, name: trimmedName, type } 
+    : { id: file._id, parentId: file.parentId, name: trimmedName, type });
   setIsDialogOpen(false);
 };
 

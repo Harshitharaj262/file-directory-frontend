@@ -4,12 +4,13 @@ import {
   ChevronDownIcon,
   PencilSquareIcon,
   TrashIcon,
+  FolderPlusIcon,
 } from "@heroicons/react/24/outline";
 import { FolderIcon, DocumentIcon } from "@heroicons/react/24/solid";
 import TableHeader from "./TableHeader";
 import DialogBox from "./Dialog";
 
-function FilesTable({ files , setFiles}) {
+function FilesTable({ files, setFiles }) {
   const [expandedFolders, setExpandedFolders] = useState([]);
   const [contextMenu, setContextMenu] = useState(null);
   const [isSelected, setIsSelected] = useState(null);
@@ -34,81 +35,112 @@ function FilesTable({ files , setFiles}) {
     setContextMenu(null);
   };
 
-  const handleRename = async(id, parentId,name, type)=>{
-try {
-    const response = await fetch(`http://localhost:3001/api/update/${id}`,{
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({name, type}),
-    })
-
-    const result = await response.json()
-    if(response.status !== 200){
-      throw new Error(result.message)
-     
-    }
-     const oldFile = files.find(file => file._id === id)
-      if(oldFile){
-        oldFile.name = name
-        setFiles([...files])
-      }
-   
-  } catch (error) {
-    console.log("Error while renaming file", error.message)
-  }
-  }
-
-  const handleDelete = async(id,parentId) =>{
+  const openCreateDialogBox = () => {
+    setAction("Create");
+    setIsDialogOpen(true);
+    closeContextMenu();
+  };
+  const handleCreate = async (parentId, name, type) => {
     try {
-      const response = await fetch('http://localhost:3001/api/delete',{
-        method: 'DELETE',
+      const response = await fetch("http://localhost:3001/api/create", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ids:[id], parentId:parentId}),
-      })
-      const result = await response.json()
-    if(response.status !== 200){
-      throw new Error(result.message)
-     
-    }
-    if(parentId){
-      // empty child array in files
-      const parentFile = files.find(file => file._id === parentId)
-      if(parentFile){
-        parentFile.children = parentFile.children.filter(child => child._id!== id)
+        body: JSON.stringify({
+          name,
+          type,
+          parentId,
+        }),
+      });
+      const result = await response.json();
+
+      if(parentId){
+        const parentFile = files.find((file) => file._id === parentId);
+        if (parentFile) {
+          parentFile.children.push(result.data);
+        }
       }
-    }
-
-      setFiles(files.filter(file => file._id!== id))
-    
+      setFiles([...files]);
     } catch (error) {
-      console.log("Error while deleting file", error.message)
+      console.log("Error while creating file", error.message);
     }
+  };
+  const handleRename = async (id, parentId, name, type) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/update/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, type }),
+      });
 
-  }
-  const handleRenameAndDeleteFileAndFolder = async(id,parentId,name,type) =>{
-  if(action === "Rename"){
-    return await handleRename(id,parentId,name,type)
-  }else{
-    return await handleDelete(id,parentId)
-  }
-    
-  }
+      const result = await response.json();
+      if (response.status !== 200) {
+        throw new Error(result.message);
+      }
+      const oldFile = files.find((file) => file._id === id);
+      if (oldFile) {
+        oldFile.name = name;
+        oldFile.updatedAt = result.data.updatedAt;
+        setFiles([...files]);
+      }
+    } catch (error) {
+      console.log("Error while renaming file", error.message);
+    }
+  };
 
-  const openRenameDialogBox = ()=>{
-    setAction("Rename")
-    setIsDialogOpen(true)
-    closeContextMenu()
-  }
+  const handleDelete = async (id, parentId) => {
+    try {
+      const response = await fetch("http://localhost:3001/api/delete", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids: [id], parentId: parentId }),
+      });
+      const result = await response.json();
+      if (response.status !== 200) {
+        throw new Error(result.message);
+      }
+      if (parentId) {
+        // empty child array in files
+        const parentFile = files.find((file) => file._id === parentId);
+        if (parentFile) {
+          parentFile.children = parentFile.children.filter(
+            (child) => child._id !== id
+          );
+        }
+      }
 
-   const openDeleteDialogBox = ()=>{
-    setAction("Delete")
-    setIsDialogOpen(true)
-    closeContextMenu()
-  }
+      setFiles(files.filter((file) => file._id !== id));
+    } catch (error) {
+      console.log("Error while deleting file", error.message);
+    }
+  };
+  const handleFileAndFolder = async (params) => {
+    const { id, parentId, name, type } = params;
+    if (action === "Create") {
+      return await handleCreate(parentId, name, type);
+    } else if (action === "Rename") {
+      return await handleRename(id, parentId, name, type);
+    } else {
+      return await handleDelete(id, parentId);
+    }
+  };
+
+  const openRenameDialogBox = () => {
+    setAction("Rename");
+    setIsDialogOpen(true);
+    closeContextMenu();
+  };
+
+  const openDeleteDialogBox = () => {
+    setAction("Delete");
+    setIsDialogOpen(true);
+    closeContextMenu();
+  };
 
   // Recursively render files and folders
   const renderFiles = (files) => {
@@ -160,7 +192,7 @@ try {
 
             {/* Other columns on the right */}
             <div className="flex flex-1 justify-between">
-              <div className="w-1/2 text-left">{file.createdAt}</div>
+              <div className="w-1/2 text-left">{file.updatedAt}</div>
               <div className="w-1/4 text-left">
                 {file.type.charAt(0).toUpperCase() + file.type.slice(1)}
               </div>
@@ -203,6 +235,18 @@ try {
           }}
         >
           <ul className="text-sm text-gray-700">
+            {/* Create Option */}
+            {isSelected.type === "folder" && (
+               <li
+              onClick={openCreateDialogBox}
+              className="px-4 py-2 cursor-pointer hover:bg-gray-100 flex items-center"
+            >
+              <FolderPlusIcon className="transform duration-300 ease h-5 w-5 text-gray-600 mr-2" />
+              <span>Create</span>
+            </li>
+            )}
+           
+
             {/* Rename Option */}
             <li
               onClick={openRenameDialogBox}
@@ -224,12 +268,13 @@ try {
         </div>
       )}
       {isDialogOpen && (
-        <DialogBox 
-        isDialogOpen={isDialogOpen}
-        setIsDialogOpen = {setIsDialogOpen}
-        file ={isSelected}
-        action = {action}
-        onSubmit={handleRenameAndDeleteFileAndFolder} />
+        <DialogBox
+          isDialogOpen={isDialogOpen}
+          setIsDialogOpen={setIsDialogOpen}
+          file={isSelected}
+          action={action}
+          onSubmit={handleFileAndFolder}
+        />
       )}
     </div>
   );
