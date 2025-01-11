@@ -21,7 +21,7 @@ function FileDataProvider({ children }) {
   const [state, dispatch] = useReducer(fileDataReducer, emptyData);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api")
+    fetch(process.env.REACT_APP_BASE_URL)
       .then((res) => res.json())
       .then((result) => {
         dispatch({ type: "files", value: result.data });

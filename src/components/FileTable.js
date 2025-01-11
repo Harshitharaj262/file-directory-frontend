@@ -41,106 +41,106 @@ function FilesTable({ files, setFiles }) {
     closeContextMenu();
   };
 
- const handleCreate = async (parentId, name, type) => {
-  try {
-    const response = await fetch("http://localhost:3001/api/create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name,
-        type,
-        parentId,
-      }),
-    });
+  const handleCreate = async (parentId, name, type) => {
+    try {
+      const response = await fetch(process.env.REACT_APP_BASE_URL + "/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          type,
+          parentId,
+        }),
+      });
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (response.status === 200) {
-     
-      if (parentId) {
-        const parentFile = parentFiles(files, result.data, parentId);
-        if (parentFile) {
-          parentFile.children.push(result.data); 
+      if (response.status === 200) {
+        if (parentId) {
+          const parentFile = parentFiles(files, result.data, parentId);
+          if (parentFile) {
+            parentFile.children.push(result.data);
+          }
+        } else {
+          files.push(result.data);
         }
+
+        setFiles([...files]);
       } else {
- 
-        files.push(result.data);
+        throw new Error(result.message || "Failed to create file");
       }
-
-      setFiles([...files]); 
-    } else {
-      throw new Error(result.message || 'Failed to create file');
+    } catch (error) {
+      console.log("Error while creating file", error.message);
+      toast.error(`Error while creating ${type}.`);
     }
-  } catch (error) {
-    console.log("Error while creating file", error.message);
-    toast.error(`Error while creating ${type}.`);
-  }
-};
+  };
 
-const parentFiles = (files, item, parentId) => {
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    if (file._id === parentId) {
-      return file; 
-    }
-    if (file.children && file.children.length > 0) {
-      const parent = parentFiles(file.children, item, parentId);
-      if (parent) {
-        return parent;
+  const parentFiles = (files, item, parentId) => {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file._id === parentId) {
+        return file;
+      }
+      if (file.children && file.children.length > 0) {
+        const parent = parentFiles(file.children, item, parentId);
+        if (parent) {
+          return parent;
+        }
       }
     }
-  }
-  return null;
-};
+    return null;
+  };
 
-const handleRename = async (id, parentId, name, type) => {
-  try {
-    const response = await fetch(`http://localhost:3001/api/update/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name, type }),
-    });
+  const handleRename = async (id, parentId, name, type) => {
+    try {
+      const response = await fetch(
+        process.env.REACT_APP_BASE_URL + `/update/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name, type }),
+        }
+      );
 
-    const result = await response.json();
-    if (response.status !== 200) {
-      throw new Error(result.message || 'Failed to rename file');
+      const result = await response.json();
+      if (response.status !== 200) {
+        throw new Error(result.message || "Failed to rename file");
+      }
+
+      const oldFile = parentFiles(files, null, id);
+      if (oldFile) {
+        oldFile.name = name;
+        oldFile.updatedAt = result.data.updatedAt;
+        setFiles([...files]);
+      }
+    } catch (error) {
+      console.log("Error while renaming file", error.message);
+      toast.error(`Error while renaming ${type}.`);
     }
-
-    const oldFile = parentFiles(files, null, id);
-    if (oldFile) {
-      oldFile.name = name;
-      oldFile.updatedAt = result.data.updatedAt; 
-      setFiles([...files]); 
-    }
-  } catch (error) {
-    console.log("Error while renaming file", error.message);
-    toast.error(`Error while renaming ${type}.`);
-  }
-};
+  };
 
   const removeFileFromParent = (files, parentId, id) => {
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    if (file._id === parentId) {
-      if (file.children && file.children.length > 0) {
-        file.children = file.children.filter((child) => child._id !== id);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file._id === parentId) {
+        if (file.children && file.children.length > 0) {
+          file.children = file.children.filter((child) => child._id !== id);
+        }
+        return;
       }
-      return;
+      if (file.children && file.children.length > 0) {
+        removeFileFromParent(file.children, parentId, id);
+      }
     }
-    if (file.children && file.children.length > 0) {
-      removeFileFromParent(file.children, parentId, id);
-    }
-  }
-};
-
+  };
 
   const handleDelete = async (id, parentId) => {
     try {
-      const response = await fetch("http://localhost:3001/api/delete", {
+      const response = await fetch(process.env.REACT_APP_BASE_URL + "/delete", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -153,7 +153,7 @@ const handleRename = async (id, parentId, name, type) => {
       }
       if (parentId) {
         // empty child array in files
-       removeFileFromParent(files,parentId,id)
+        removeFileFromParent(files, parentId, id);
       }
 
       setFiles(files.filter((file) => file._id !== id));
@@ -185,13 +185,13 @@ const handleRename = async (id, parentId, name, type) => {
     closeContextMenu();
   };
   const handleDrop = (item, folder) => {
-    if(!folder || folder?.parentId === null){
+    if (!folder || folder?.parentId === null) {
       const updatedFiles = [...files];
       moveItem(updatedFiles, item, folder);
       setFiles(updatedFiles);
     }
-  
-   if (folder._id === item._id || isDescendant(item, folder)) return;
+
+    if (folder._id === item._id || isDescendant(item, folder)) return;
     const updatedFiles = [...files];
     moveItem(updatedFiles, item, folder);
     setFiles(updatedFiles);
@@ -225,7 +225,7 @@ const handleRename = async (id, parentId, name, type) => {
     }
     if (isMovedToTarget) {
       try {
-        const response = await fetch("http://localhost:3001/api/move", {
+        const response = await fetch(process.env.REACT_APP_BASE_URL + "/move", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

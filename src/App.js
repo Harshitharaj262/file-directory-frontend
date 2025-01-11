@@ -17,7 +17,7 @@ function AppContent() {
         <h1>File Management</h1>
         {/* Create files / folder */}
         <div className="flex flex-row justify-center items-center mt-2 lg:items-end lg:justify-end">
-    <CreateFileOrFolder files={files} setFiles={setFiles} />
+          <CreateFileOrFolder files={files} setFiles={setFiles} />
         </div>
         <div className="min-h-screen rounded-sm shadow-lg">
           <div className="flex items-start justify-start p-8">
