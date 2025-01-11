@@ -1,9 +1,9 @@
 # File Directory Frontend Project
 
 ## Overview
-The file directory frontend project conatins  a basic file management UI with options to create new files and folders, rename them and delete them. The files or folders can also be dragged and dropped to different folders. 
+The file directory frontend project features a simple file management interface that allows users to create, rename, and delete files and folders. Users can also drag and drop files or folders into different directories.
 
-Note: To create subfolders or files, `right click` on the parent folder to get the context menu.
+Note: To create subfolders or files, right-click on the parent folder to access the context menu.
 
 ## To Run Locally
 
@@ -22,7 +22,7 @@ To visit app
 ## Create .env file
 Add the following variables to your .env
 
-REACT_APP_BASE_URL = 'http://localhost:{port}/api' (backed local url)
+REACT_APP_BASE_URL = 'http://localhost:{port}/api' (backend local url)
 
 ### Live Application URL
 ### https://file-directory-frontend.vercel.app/
