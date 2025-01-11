@@ -1,10 +1,15 @@
-import { useEffect, createContext, useContext, useState , useReducer} from "react";
+import {
+  useEffect,
+  createContext,
+  useContext,
+  useReducer,
+} from "react";
 
 const FileDataContext = createContext(); // Correct Context
 
-const emptyData={
-  files: []
-}
+const emptyData = {
+  files: [],
+};
 
 function fileDataReducer(state, action) {
   if (!Object.keys(emptyData).includes(action.type)) {
@@ -13,14 +18,13 @@ function fileDataReducer(state, action) {
   return { ...state, ...{ [action.type]: action.value } };
 }
 function FileDataProvider({ children }) {
-  const [files, setFiles] = useState([]);
-const [state, dispatch] = useReducer(fileDataReducer, emptyData)
+  const [state, dispatch] = useReducer(fileDataReducer, emptyData);
 
   useEffect(() => {
     fetch("http://localhost:3001/api")
       .then((res) => res.json())
       .then((result) => {
-        dispatch({type:"files", value: result.data})
+        dispatch({ type: "files", value: result.data });
       })
       .catch((err) => {
         console.log(err.message);
@@ -28,7 +32,8 @@ const [state, dispatch] = useReducer(fileDataReducer, emptyData)
   }, [state.reload]);
 
   const value = {
-   state, dispatch
+    state,
+    dispatch,
   };
 
   return (
@@ -39,12 +44,11 @@ const [state, dispatch] = useReducer(fileDataReducer, emptyData)
 }
 
 const useFileData = () => {
-  const context = useContext(FileDataContext)
+  const context = useContext(FileDataContext);
   if (!context) {
     throw new Error("useFileData must be used within a FileDataProvider");
   }
   return context;
 };
 
-
-export {FileDataProvider, useFileData};
+export { FileDataProvider, useFileData };

@@ -2,21 +2,23 @@ import { useState } from "react";
 import { Dialog, DialogPanel } from "@headlessui/react";
 
 function DialogBox({ isDialogOpen, setIsDialogOpen, file, action, onSubmit }) {
-  const [newName, setNewName] = useState(action!=='Create'? file?.name: '');
+  const [newName, setNewName] = useState(action !== "Create" ? file?.name : "");
 
- const handleSubmit = (e) => {
-  e.preventDefault();
-  const trimmedName = newName.trim();
-  
-  if (!trimmedName) return;
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const trimmedName = newName.trim();
 
-  const isFile = /\.[a-zA-Z0-9]+$/.test(trimmedName);
-  const type = isFile ? 'file' : 'folder';
-  onSubmit( action === "Create" 
-    ? { id: null, parentId: file?._id || null, name: trimmedName, type } 
-    : { id: file._id, parentId: file.parentId, name: trimmedName, type });
-  setIsDialogOpen(false);
-};
+    if (!trimmedName) return;
+
+    const isFile = /\.[a-zA-Z0-9]+$/.test(trimmedName);
+    const type = isFile ? "file" : "folder";
+    onSubmit(
+      action === "Create"
+        ? { id: null, parentId: file?._id || null, name: trimmedName, type }
+        : { id: file._id, parentId: file.parentId, name: trimmedName, type }
+    );
+    setIsDialogOpen(false);
+  };
 
   return (
     <Dialog
@@ -34,19 +36,19 @@ function DialogBox({ isDialogOpen, setIsDialogOpen, file, action, onSubmit }) {
                   {action === "Rename"
                     ? `Rename ${file.type}`
                     : action === "Delete"
-                    ?`Delete ${file.type}`
-                    :`Create File or Folder`}
+                    ? `Delete ${file.type}`
+                    : `Create New File or Folder`}
                 </h3>
                 {/* Form */}
                 <form onSubmit={handleSubmit}>
                   <div className="mt-4">
                     {action === "Delete" ? (
                       <div>
-           
-                        Do you want to delete this {file.type}? <br/>
+                        Do you want to delete this {file.type}? <br />
                         {file.children.length > 0 && (
                           <span className="text-red-600">
-                           Deleting this folder will also remove all its subfolders and files.
+                            Deleting this folder will also remove all its
+                            subfolders and files.
                           </span>
                         )}
                       </div>
@@ -56,10 +58,12 @@ function DialogBox({ isDialogOpen, setIsDialogOpen, file, action, onSubmit }) {
                           htmlFor="new-file-name"
                           className="block text-sm font-medium text-gray-700"
                         >
-                          {action === 'Rename'? `${
-                            file.type.charAt(0).toUpperCase() +
-                            file.type.slice(1)
-                          } name` : 'Name'}
+                          {action === "Rename"
+                            ? `${
+                                file.type.charAt(0).toUpperCase() +
+                                file.type.slice(1)
+                              } name`
+                            : "Name"}
                         </label>
                         <input
                           type="text"
@@ -76,7 +80,11 @@ function DialogBox({ isDialogOpen, setIsDialogOpen, file, action, onSubmit }) {
 
                   {/* Hidden input for file id */}
                   <input type="hidden" name="file-id" value={file?._id} />
-                  <input type="hidden" name="file-parent-id" value={file?.parentId} />
+                  <input
+                    type="hidden"
+                    name="file-parent-id"
+                    value={file?.parentId}
+                  />
 
                   <div className="mt-6 flex justify-end space-x-4">
                     <button
@@ -88,9 +96,15 @@ function DialogBox({ isDialogOpen, setIsDialogOpen, file, action, onSubmit }) {
                     </button>
                     <button
                       type="submit"
-                       className={`${action === 'Delete' ? 'bg-red-600' : 'bg-blue-600'} px-4 py-2 text-white rounded-md text-sm`}
+                      className={`${
+                        action === "Delete" ? "bg-red-600" : "bg-blue-600"
+                      } px-4 py-2 text-white rounded-md text-sm`}
                     >
-                      {action === "Rename" ? "Rename" : action === "Delete"? "Delete": "Save"}
+                      {action === "Rename"
+                        ? "Rename"
+                        : action === "Delete"
+                        ? "Delete"
+                        : "Save"}
                     </button>
                   </div>
                 </form>
