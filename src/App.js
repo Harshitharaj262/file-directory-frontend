@@ -2,6 +2,7 @@ import "./input.css";
 import CreateFileOrFolder from "./components/CreateFileOrFolder.js";
 import { FileDataProvider, useFileData } from "./contexts/FileDataContext.js";
 import FilesTable from "./components/FileTable";
+import { ToastContainer } from "react-toastify";
 
 function AppContent() {
   const filesDataContext = useFileData();
@@ -34,6 +35,7 @@ function AppContent() {
 function App() {
   return (
     <FileDataProvider>
+      <ToastContainer />
       <AppContent />
     </FileDataProvider>
   );

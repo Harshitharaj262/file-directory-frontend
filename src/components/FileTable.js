@@ -9,6 +9,7 @@ import {
   TrashIcon,
   FolderPlusIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "react-toastify";
 
 function FilesTable({ files, setFiles }) {
   const [expandedFolders, setExpandedFolders] = useState([]);
@@ -39,56 +40,103 @@ function FilesTable({ files, setFiles }) {
     setIsDialogOpen(true);
     closeContextMenu();
   };
-  const handleCreate = async (parentId, name, type) => {
-    try {
-      const response = await fetch("http://localhost:3001/api/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          type,
-          parentId,
-        }),
-      });
-      const result = await response.json();
 
+ const handleCreate = async (parentId, name, type) => {
+  try {
+    const response = await fetch("http://localhost:3001/api/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        type,
+        parentId,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (response.status === 200) {
+     
       if (parentId) {
-        const parentFile = files.find((file) => file._id === parentId);
+        const parentFile = parentFiles(files, result.data, parentId);
         if (parentFile) {
-          parentFile.children.push(result.data);
+          parentFile.children.push(result.data); 
         }
+      } else {
+ 
+        files.push(result.data);
       }
-      setFiles([...files]);
-    } catch (error) {
-      console.log("Error while creating file", error.message);
-    }
-  };
-  const handleRename = async (id, parentId, name, type) => {
-    try {
-      const response = await fetch(`http://localhost:3001/api/update/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, type }),
-      });
 
-      const result = await response.json();
-      if (response.status !== 200) {
-        throw new Error(result.message);
-      }
-      const oldFile = files.find((file) => file._id === id);
-      if (oldFile) {
-        oldFile.name = name;
-        oldFile.updatedAt = result.data.updatedAt;
-        setFiles([...files]);
-      }
-    } catch (error) {
-      console.log("Error while renaming file", error.message);
+      setFiles([...files]); 
+    } else {
+      throw new Error(result.message || 'Failed to create file');
     }
-  };
+  } catch (error) {
+    console.log("Error while creating file", error.message);
+    toast.error(`Error while creating ${type}.`);
+  }
+};
+
+const parentFiles = (files, item, parentId) => {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    if (file._id === parentId) {
+      return file; 
+    }
+    if (file.children && file.children.length > 0) {
+      const parent = parentFiles(file.children, item, parentId);
+      if (parent) {
+        return parent;
+      }
+    }
+  }
+  return null;
+};
+
+const handleRename = async (id, parentId, name, type) => {
+  try {
+    const response = await fetch(`http://localhost:3001/api/update/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, type }),
+    });
+
+    const result = await response.json();
+    if (response.status !== 200) {
+      throw new Error(result.message || 'Failed to rename file');
+    }
+
+    const oldFile = parentFiles(files, null, id);
+    if (oldFile) {
+      oldFile.name = name;
+      oldFile.updatedAt = result.data.updatedAt; 
+      setFiles([...files]); 
+    }
+  } catch (error) {
+    console.log("Error while renaming file", error.message);
+    toast.error(`Error while renaming ${type}.`);
+  }
+};
+
+  const removeFileFromParent = (files, parentId, id) => {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    if (file._id === parentId) {
+      if (file.children && file.children.length > 0) {
+        file.children = file.children.filter((child) => child._id !== id);
+      }
+      return;
+    }
+    if (file.children && file.children.length > 0) {
+      removeFileFromParent(file.children, parentId, id);
+    }
+  }
+};
+
 
   const handleDelete = async (id, parentId) => {
     try {
@@ -105,17 +153,13 @@ function FilesTable({ files, setFiles }) {
       }
       if (parentId) {
         // empty child array in files
-        const parentFile = files.find((file) => file._id === parentId);
-        if (parentFile) {
-          parentFile.children = parentFile.children.filter(
-            (child) => child._id !== id
-          );
-        }
+       removeFileFromParent(files,parentId,id)
       }
 
       setFiles(files.filter((file) => file._id !== id));
     } catch (error) {
       console.log("Error while deleting file", error.message);
+      toast.error("Error while deleting");
     }
   };
   const handleFileAndFolder = async (params) => {
@@ -141,15 +185,21 @@ function FilesTable({ files, setFiles }) {
     closeContextMenu();
   };
   const handleDrop = (item, folder) => {
-    if (folder._id === item._id || isDescendant(item, folder)) return;
-
+    if(!folder || folder?.parentId === null){
+      const updatedFiles = [...files];
+      moveItem(updatedFiles, item, folder);
+      setFiles(updatedFiles);
+    }
+  
+   if (folder._id === item._id || isDescendant(item, folder)) return;
     const updatedFiles = [...files];
     moveItem(updatedFiles, item, folder);
     setFiles(updatedFiles);
   };
 
   const isDescendant = (item, folder) => {
-    if (!folder.children || folder.children.length === 0) return false;
+    if (!folder || !folder.children || folder.children.length === 0)
+      return false;
     return folder.children.some(
       (child) => child._id === item._id || isDescendant(item, child)
     );
@@ -165,32 +215,34 @@ function FilesTable({ files, setFiles }) {
       const index = files.findIndex((file) => file._id === item._id);
       if (index !== -1) files.splice(index, 1);
     }
-
+    let isMovedToTarget = false;
     if (targetFolder) {
       if (!targetFolder.children) targetFolder.children = [];
       targetFolder.children.push(item);
+      isMovedToTarget = true;
     } else {
       files.push(item);
     }
-    const sourceId = item._id;
-    const destinationId = targetFolder._id;
-    try {
-      const response = await fetch("http://localhost:3001/api/move", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          sourceId,
-          destinationId,
-        }),
-      });
-      if (response.status !== 200) {
-        throw new Error("Error while moving file");
+    if (isMovedToTarget) {
+      try {
+        const response = await fetch("http://localhost:3001/api/move", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sourceId: item._id,
+            destinationId: targetFolder ? targetFolder._id : null,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to move file/folder to the destination");
+        }
+
+        await response.json();
+      } catch (error) {
+        console.error("Error while moving file/folder:", error.message);
+        toast.error("Error while moving file/folder.");
       }
-      await response.json();
-    } catch (error) {
-      console.log("Error while moving file", error.message);
     }
   };
 

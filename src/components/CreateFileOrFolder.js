@@ -1,6 +1,7 @@
 import { FolderPlusIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import DialogBox from "./Dialog";
+import {toast} from 'react-toastify'
 function CreateFileOrFolder({ files, setFiles }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [action, setAction] = useState(null);
@@ -11,8 +12,8 @@ function CreateFileOrFolder({ files, setFiles }) {
   };
 
   const handleCreateFileAndFolder = async (params) => {
-    const { parentId, name, type } = params;
-    console.log("openCreateDialogBox");
+    try {
+      const { parentId, name, type } = params;
     const response = await fetch("http://localhost:3001/api/create", {
       method: "POST",
       headers: {
@@ -24,8 +25,16 @@ function CreateFileOrFolder({ files, setFiles }) {
         parentId,
       }),
     });
+
     const result = await response.json();
+    if (response.status!== 201) {
+      throw new Error(result.error);
+    }
     setFiles([...files, result.data]);
+    } catch (error) {
+      toast.error(error.message)
+    }
+    
   };
   return (
     <>
