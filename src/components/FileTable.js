@@ -57,7 +57,7 @@ function FilesTable({ files, setFiles }) {
 
       const result = await response.json();
 
-      if (response.status === 200) {
+      if (response.status === 201) {
         if (parentId) {
           const parentFile = parentFiles(files, result.data, parentId);
           if (parentFile) {
@@ -184,17 +184,15 @@ function FilesTable({ files, setFiles }) {
     setIsDialogOpen(true);
     closeContextMenu();
   };
-  const handleDrop = (item, folder) => {
+  const handleDrop =  (item, folder) => {
     if (!folder || folder?.parentId === null) {
       const updatedFiles = [...files];
       moveItem(updatedFiles, item, folder);
-      setFiles(updatedFiles);
     }
 
     if (folder._id === item._id || isDescendant(item, folder)) return;
     const updatedFiles = [...files];
     moveItem(updatedFiles, item, folder);
-    setFiles(updatedFiles);
   };
 
   const isDescendant = (item, folder) => {
@@ -218,6 +216,7 @@ function FilesTable({ files, setFiles }) {
     let isMovedToTarget = false;
     if (targetFolder) {
       if (!targetFolder.children) targetFolder.children = [];
+      item.parentId = targetFolder._id
       targetFolder.children.push(item);
       isMovedToTarget = true;
     } else {
@@ -239,6 +238,7 @@ function FilesTable({ files, setFiles }) {
         }
 
         await response.json();
+        setFiles([...files]);
       } catch (error) {
         console.error("Error while moving file/folder:", error.message);
         toast.error("Error while moving file/folder.");
